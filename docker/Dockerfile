@@ -10,8 +10,13 @@ ENV LD_LIBRARY_PATH /usr/local/caffe2_build/lib:${LD_LIBRARY_PATH}
 # Clone the Detectron repository
 RUN git clone https://github.com/facebookresearch/densepose /densepose
 
+# correct pyyaml version
+COPY ./requirements.txt /densepose/
+# update pip
+RUN pip install --upgrade pip==10.0.1 -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+
 # Install Python dependencies
-RUN pip install -r /densepose/requirements.txt
+RUN pip install -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com -r /densepose/requirements.txt
 
 # Install the COCO API
 RUN git clone https://github.com/cocodataset/cocoapi.git /cocoapi
