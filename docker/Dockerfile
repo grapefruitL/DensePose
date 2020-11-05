@@ -31,3 +31,18 @@ RUN make
 
 # [Optional] Build custom ops
 RUN make ops
+
+# update sources
+# RUN echo "deb http://mirror.lzu.edu.cn/debian stable main contrib non-free" > /etc/apt/sources.list &&\
+#     echo "deb-src http://mirror.lzu.edu.cn/debian stable main contrib non-free" >> /etc/apt/sources.list &&\
+#     echo "deb http://mirror.lzu.edu.cn/debian stable-updates main contrib non-free" >> /etc/apt/sources.list &&\
+#     echo "deb-src http://mirror.lzu.edu.cn/debian stable-updates main contrib non-free" >> /etc/apt/sources.list &&\
+#     echo "deb http://mirror.lzu.edu.cn/debian/ stretch-backports main contrib non-free" >> /etc/apt/sources.list &&\
+#     echo "deb-src http://mirror.lzu.edu.cn/debian/ stretch-backports main contrib non-free" >> /etc/apt/sources.list &&\
+#     echo "deb http://mirror.lzu.edu.cn/debian-security/ stretch/updates main contrib non-free" >> /etc/apt/sources.list &&\
+#     echo "deb-src http://mirror.lzu.edu.cn/debian-security/ stretch/updates main contrib non-free" >> /etc/apt/sources.list &&\
+# 	apt-get update &&\
+#     apt-get install -y ffmpeg
+
+# RUN apt-get install -y vim
+

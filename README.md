@@ -1,3 +1,28 @@
+# docker images method notes
+- video demo has added, You need to do these things:
+  - use the new Dockerfile to build image
+    - python lib version all specified
+  - run and within the container
+    - docker run --gpus all -v DensePose/DensePoseData:/denseposedata -v DensePose/tools:/densepose/tools_kk -it densepose:c2-cuda9-cudnn7 bash
+  - replace the local DensePoseData directory with the host one
+    - mv /densepose/DensePoseData /densepose/DensePoseDataLocal
+    - ln -s /denseposedata DensePoseData
+  - copy tools_kk/vis_kk.py to detectron/utils(you can also do it in infer_vid.py when running demo)
+  - install ffmpeg(you can also do it in dockerfile when building the image)
+  - save container to new image
+    - docker commit $(docker ps --last 1 -q) 
+ densepose:c2-cuda9-cudnn7-kk
+
+- video demo command:
+  - docker run --rm --gpus all -v /home/kevin/aj/DensePose/DensePoseData:/denseposedata -v /home/kevin/aj/DensePose/tools:/densepose/tools_kk -it densepose:c2-cuda9-cudnn7-kk python2 tools_kk/infer_vid.py --cfg configs/DensePose_ResNet101_FPN_s1x-e2e.yaml --output-dir DensePoseData/infer_out/  --wts ./DensePoseData/DensePose_ResNet101_FPN_s1x-e2e.pkl --input-file tools_kk/video.mp4
+
+- image demo command:
+  - docker run --rm --gpus all -v /home/kevin/aj/DensePose/DensePoseData:/denseposedata -v /home/kevin/aj/DensePose/tools:/densepose/tools_kk -it densepose:c2-cuda9-cudnn7-kk python2 tools_kk/infer_simple.py --cfg configs/DensePose_ResNet101_FPN_s1x-e2e.yaml --output-dir DensePoseData/infer_out/ --image-ext jpg --wts ./DensePoseData/DensePose_ResNet101_FPN_s1x-e2e.pkl DensePoseData/demo_data/grc.jpg
+
+- reference
+  - https://github.com/trrahul/densepose-video
+
+
 # DensePose: 
 **Dense Human Pose Estimation In The Wild**
 
