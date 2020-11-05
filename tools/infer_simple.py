@@ -34,7 +34,7 @@ from detectron.utils.timer import Timer
 import detectron.core.test_engine as infer_engine
 import detectron.datasets.dummy_datasets as dummy_datasets
 import detectron.utils.c2 as c2_utils
-import detectron.utils.vis as vis_utils
+import detectron.utils.vis_k as vis_utils
 
 c2_utils.import_detectron_ops()
 
@@ -132,9 +132,102 @@ def main(args):
             kp_thresh=2
         )
 
+import video_loader
+def main_video(args):
+    logger = logging.getLogger(__name__)
+    merge_cfg_from_file(args.cfg)
+    cfg.NUM_GPUS = 1
+    args.weights = cache_url(args.weights, cfg.DOWNLOAD_CACHE)
+    assert_and_infer_cfg(cache_urls=False)
+    model = infer_engine.initialize_model_from_cfg(args.weights)
+    dummy_coco_dataset = dummy_datasets.get_coco_dataset()
+
+    if os.path.isdir(args.im_or_folder):
+        im_list = glob.iglob(args.im_or_folder + '/*.' + args.image_ext)
+    else:
+        im_list = [args.im_or_folder]
+
+
+    loader = video_loader.loader('./tools_kk/video.mp4')
+    save_path = './tools_kk/output.mp4'
+
+    for i, [im, vid_cap] in enumerate(loader):
+
+        if i == 0:
+            logger.info(
+                ' \ Note: inference on the first image will be slower than the '
+                'rest (caches and auto-tuning need to warm up)'
+            )
+            # init video writer
+            fourcc = 'mp4v'  # output video codec
+            fps = vid_cap.get(cv2.CAP_PROP_FPS)
+            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            # vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*fourcc), fps, (w, h))
+            vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*b'XVID'), fps, (w, h))
+            print('fourcc, fps, w, h')
+            print(fourcc, fps, w, h)
+        
+        logger.info('{}/{} processed'.format(i, loader.nframes))
+        timers = defaultdict(Timer)
+        t = time.time()
+        if im is None:
+            break
+        with c2_utils.NamedCudaScope(0):
+            cls_boxes, cls_segms, cls_keyps, cls_bodys = infer_engine.im_detect_all(
+                model, im, None, timers=timers
+            )
+        # logger.info('Inference time: {:.3f}s'.format(time.time() - t))
+        # for k, v in timers.items():
+        #     logger.info(' | {}: {:.3f}s'.format(k, v.average_time))
+        
+
+
+
+        iuv = vis_utils.vis_one_image_video(
+            im[:, :, ::-1],  # BGR -> RGB for visualization
+            'im_name',
+            args.output_dir,
+            cls_boxes,
+            cls_segms,
+            cls_keyps,
+            cls_bodys,
+            dataset=dummy_coco_dataset,
+            box_alpha=0.3,
+            show_class=True,
+            thresh=0.7,
+            kp_thresh=2
+        )
+
+        gray = cv2.cvtColor(iuv, cv2.COLOR_BGR2GRAY)
+        mask = iuv > 0
+        im[mask] = 0
+        image=cv2.add(iuv, im)
+
+        vid_writer.write(image)
+
+# docker run --rm --gpus all -v /home/kevin/aj/DensePose/DensePoseData:/denseposedata -v /home/kevin/aj/DensePose/tools:/densepose/tools_kk -it densepose:c2-cuda9-cudnn7-kk python2 tools_kk/infer_simple.py --cfg configs/DensePose_ResNet101_FPN_s1x-e2e.yaml --output-dir DensePoseData/infer_out/ --image-ext jpg --wts ./DensePoseData/DensePose_ResNet101_FPN_s1x-e2e.pkl DensePoseData/demo_data/grc.jpg
+
+
+def show_iuv():
+
+    from matplotlib  import pyplot as plt
+
+    IUV = cv2.imread('../DensePoseData/infer_out/grc_IUV.png')
+    im  = cv2.imread('../DensePoseData/demo_data/grc.jpg')
+
+    fig = plt.figure(figsize=[12,12])
+    # plt.imshow( im[:,:,::-1] )
+    plt.contour( IUV[:,:,1]/256.,10, linewidths = 1 )
+    plt.contour( IUV[:,:,2]/256.,10, linewidths = 1 )
+    plt.axis('off') ; 
+    plt.savefig('grc_processed.jpg')
 
 if __name__ == '__main__':
+
     workspace.GlobalInit(['caffe2', '--caffe2_log_level=0'])
     setup_logging(__name__)
     args = parse_args()
     main(args)
+
+    # show_iuv()
